@@ -7,9 +7,10 @@ import "./App.css";
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [camera, setCamera] = useState("FHAZ");
+  const [firstCall, setFirstCall] = useState(true);
+  const [camera, setCamera] = useState("fhaz");
   const [selectedRover, setSelectedRover] = useState("curiosity");
-  let [data, setData] = useState([]);
+  let [photos, setPhotos] = useState([]);
 
   const rovers = [
     { id: 1, name: "spirit" },
@@ -17,37 +18,33 @@ function App() {
     { id: 3, name: "opportunity" },
   ];
 
-  // useEffect(() => {
-  //   axios(
-  //     `https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos?sol=1000&api_key=${constants.key}`
-  //   )
-  //     .then((response) => {
-  //       setData(response.data);
-  //     })
-  //     .catch((error) => {
-  //       console.log("Error fetching data: ", error);
-  //       setError(error);
-  //     })
-  //     .finally(() => setIsLoading(false));
-  // }, []);
-
   const handleClick = (rover) => {
     setSelectedRover(rover.name);
   };
 
   const handleSearch = () => {
     axios(
-      `https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos?sol=1000&api_key=${constants.key}`
+      `https://api.nasa.gov/mars-photos/api/v1/rovers/${selectedRover}/photos?sol=1000&camera=${camera}&api_key=${constants.key}`
     )
       .then((response) => {
-        setData(response.data);
+        setIsLoading(true);
+        setPhotos(response.data.photos);
       })
       .catch((error) => {
         console.log("Error fetching data: ", error);
         setError(error);
       })
-      .finally(() => setIsLoading(false));
-  }
+      .finally(() => {
+        setFirstCall(false);
+        setIsLoading(false);
+      });
+  };
+
+  const renderPhotos = () => {
+    return photos.map((photo, index) => (
+      <img key={index} src={photo.img_src} alt="photo" />
+    ));
+  };
 
   return (
     <div className="App">
@@ -64,35 +61,39 @@ function App() {
         ))}
       </div>
       <select value={camera} onChange={(e) => setCamera(e.target.value)}>
-        <option value="FHAZ">Front Hazard Avoidance Camera</option>
-        <option value="RHAZ">Rear Hazard Avoidance Camera</option>
-        <option value="NAVCAM">Navigation Camera</option>
+        <option value="fhaz">Front Hazard Avoidance Camera</option>
+        <option value="rhaz">Rear Hazard Avoidance Camera</option>
+        <option value="navcam">Navigation Camera</option>
         {selectedRover === "curiosity" && (
-          <option value="MAST">Mast Camera</option>
+          <option value="mast">Mast Camera</option>
         )}
         {selectedRover === "curiosity" && (
-          <option value="CHEMCAM">Chemistry and Camera Complex</option>
+          <option value="chemcam">Chemistry and Camera Complex</option>
         )}
         {selectedRover === "curiosity" && (
-          <option value="MAHLI">Mars Hand Lens Imager</option>
+          <option value="mahli">Mars Hand Lens Imager</option>
         )}
         {selectedRover === "curiosity" && (
-          <option value="MARDI">Mars Descent Imager</option>
+          <option value="mardi">Mars Descent Imager</option>
         )}
         {selectedRover !== "curiosity" && (
-          <option value="PANCAM">Panoramic Camera</option>
+          <option value="pancam">Panoramic Camera</option>
         )}
         {selectedRover !== "curiosity" && (
-          <option value="MINITES">
+          <option value="minites">
             Miniature Thermal Emission Spectrometer (Mini-TES)
           </option>
         )}
       </select>
       <button onClick={handleSearch}>Search</button>
-      {isLoading && <h2>Loading...</h2>}
-        {!isLoading && error == null && (
-          <img src={data.photos[0].img_src} alt="photo" />
-        )}
+      {!firstCall && isLoading && <h2>Loading...</h2>}
+      {error && <h2>{error}</h2>}
+      {!firstCall &&
+        (photos.length > 0 ? (
+          renderPhotos()
+        ) : (
+          <h2>No images with those parameters</h2>
+        ))}
     </div>
   );
 }
